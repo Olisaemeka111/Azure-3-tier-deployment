@@ -1,0 +1,66 @@
+[1mProject:[22m main
+
+ [4mName[24m                                                              [4mMonthly Qty[24m  [4mUnit[24m                      [4mMonthly Cost[24m    
+                                                                                                                          
+ [1mazurerm_application_gateway.appgw[22m                                                                                        
+ [2m├─[22m Gateway usage (basic v2)                                               730  hours                          $146.00    
+ [2m└─[22m V2 capacity units (basic)                                            1,460  CU                              $11.68  * 
+                                                                                                                          
+ [1mazurerm_bastion_host.bastion[22m                                                                                             
+ [2m├─[22m Bastion host                                                           730  hours                          $138.70    
+ [2m└─[22m Outbound data transfer (first 10TB)                     Monthly cost depends on usage: $0.087 per GB                  
+                                                                                                                          
+ [1mazurerm_windows_virtual_machine.sql[0][22m                                                                                   
+ [2m├─[22m Instance usage (Windows, pay as you go, Standard_B2s)                  730  hours                           $36.21    
+ [2m└─[22m os_disk                                                                                                               
+ [2m   └─[22m Storage (P4, LRS)                                                     1  months                           $5.28    
+                                                                                                                          
+ [1mazurerm_windows_virtual_machine.sql[1][22m                                                                                   
+ [2m├─[22m Instance usage (Windows, pay as you go, Standard_B2s)                  730  hours                           $36.21    
+ [2m└─[22m os_disk                                                                                                               
+ [2m   └─[22m Storage (P4, LRS)                                                     1  months                           $5.28    
+                                                                                                                          
+ [1mazurerm_windows_virtual_machine.ad[22m                                                                                       
+ [2m├─[22m Instance usage (Windows, pay as you go, Standard_B1ms)                 730  hours                           $17.96    
+ [2m└─[22m os_disk                                                                                                               
+ [2m   ├─[22m Storage (S4, LRS)                                                     1  months                           $1.54    
+ [2m   └─[22m Disk operations                                      Monthly cost depends on usage: $0.0005 per 10k operations     
+                                                                                                                          
+ [1mazurerm_lb_rule.biz_rule[22m                                                                                                 
+ [2m└─[22m Rule usage                                                             730  hours                            $7.30    
+                                                                                                                          
+ [1mazurerm_lb_rule.db_rule[22m                                                                                                  
+ [2m└─[22m Rule usage                                                             730  hours                            $7.30    
+                                                                                                                          
+ [1mazurerm_public_ip.appgw_pip[22m                                                                                              
+ [2m└─[22m IP address (static, regional)                                          730  hours                            $3.65    
+                                                                                                                          
+ [1mazurerm_public_ip.bastion_pip[22m                                                                                            
+ [2m└─[22m IP address (static, regional)                                          730  hours                            $3.65    
+                                                                                                                          
+ [1mazurerm_traffic_manager_azure_endpoint.tm_web[22m                                                                            
+ [2m└─[22m Basic health check (Global)                                            730  hours                            $0.36    
+                                                                                                                          
+ [1mazurerm_lb.biz[22m                                                                                                           
+ [2m└─[22m Data processed                                          Monthly cost depends on usage: $0.005 per GB                  
+                                                                                                                          
+ [1mazurerm_lb.db[22m                                                                                                            
+ [2m└─[22m Data processed                                          Monthly cost depends on usage: $0.005 per GB                  
+                                                                                                                          
+ [1mazurerm_traffic_manager_profile.tm[22m                                                                                       
+ [2m└─[22m DNS queries (first 1B)                                  Monthly cost depends on usage: $0.54 per 1M queries           
+                                                                                                                          
+[1m OVERALL TOTAL[22m                                                                                                 $421.11 
+
+*Usage costs can be estimated by updating Infracost Cloud settings, see docs for other options.
+
+──────────────────────────────────
+42 cloud resources were detected:
+∙ 13 were estimated
+∙ 29 were free
+
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━┳━━━━━━━━━━━━┓
+┃ Project                                            ┃ Baseline cost ┃ Usage cost* ┃ Total cost ┃
+┣━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━━━╋━━━━━━━━━━━━━╋━━━━━━━━━━━━┫
+┃ main                                               ┃          $409 ┃         $12 ┃       $421 ┃
+┗━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━━━┻━━━━━━━━━━━━━┻━━━━━━━━━━━━┛

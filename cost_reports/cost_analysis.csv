@@ -1,0 +1,14 @@
+Resource Type,Resource Name,Monthly Cost,Percentage
+Microsoft.Network/applicationGateways,azure-3tier-appgw,195.0,39.998359041680345
+Microsoft.Network/bastionHosts,azure-3tier-bastion,144.0,29.537249753856255
+Microsoft.Compute/virtualMachines,az3t-sql-1,30.4,6.2356416147029865
+Microsoft.Compute/virtualMachines,az3t-sql-0,30.4,6.2356416147029865
+Microsoft.Compute/virtualMachines,azure-3tier-ad,30.4,6.2356416147029865
+Microsoft.Network/loadBalancers,azure-3tier-db-lb,18.26,3.745487364620939
+Microsoft.Network/loadBalancers,azure-3tier-biz-lb,18.26,3.745487364620939
+Microsoft.Compute/virtualMachines,az3t-sql-0_OsDisk,4.0,0.8204791598293404
+Microsoft.Compute/virtualMachines,azure-3tier-ad_OsDisk,4.0,0.8204791598293404
+Microsoft.Compute/virtualMachines,az3t-sql-1_OsDisk,4.0,0.8204791598293404
+Microsoft.Network/applicationGateways,azure-3tier-appgw-pip,3.65,0.748687233344273
+Microsoft.Network/bastionHosts,azure-3tier-bastion-pip,3.65,0.748687233344273
+Microsoft.Network/trafficmanagerprofiles,azure-3tier-tm-ypggv,1.5,0.3076796849360026
