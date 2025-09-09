@@ -6,6 +6,7 @@ resource "azurerm_public_ip" "appgw_pip" {
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
+  domain_name_label   = "${var.name_prefix}-appgw-${random_string.suffix.result}"
 }
 
 resource "azurerm_application_gateway" "appgw" {
@@ -14,8 +15,8 @@ resource "azurerm_application_gateway" "appgw" {
   resource_group_name = azurerm_resource_group.rg.name
 
   sku {
-    name = var.app_gateway_sku
-    tier = var.app_gateway_sku
+    name = "Standard_v2"
+    tier = "Standard_v2"
   }
 
   autoscale_configuration {
@@ -32,10 +33,11 @@ resource "azurerm_application_gateway" "appgw" {
     port = 80
   }
 
-  frontend_port {
-    name = "port443"
-    port = 443
-  }
+  // HTTPS port removed - no SSL certificate configured
+  // frontend_port {
+  //   name = "port443"
+  //   port = 443
+  // }
 
   frontend_ip_configuration {
     name                 = "frontend"
@@ -49,13 +51,14 @@ resource "azurerm_application_gateway" "appgw" {
     protocol                       = "Http"
   }
 
-  http_listener {
-    name                           = "listener443"
-    frontend_ip_configuration_name = "frontend"
-    frontend_port_name             = "port443"
-    protocol                       = "Https"
-    ssl_certificate_name           = null
-  }
+  // HTTPS listener removed - no SSL certificate configured
+  // http_listener {
+  //   name                           = "listener443"
+  //   frontend_ip_configuration_name = "frontend"
+  //   frontend_port_name             = "port443"
+  //   protocol                       = "Https"
+  //   ssl_certificate_name           = null
+  // }
 
   backend_address_pool {
     name = "web-backendpool"
@@ -72,6 +75,7 @@ resource "azurerm_application_gateway" "appgw" {
   request_routing_rule {
     name                       = "rule80"
     rule_type                  = "Basic"
+    priority                   = 100
     http_listener_name         = "listener80"
     backend_address_pool_name  = "web-backendpool"
     backend_http_settings_name = "http"

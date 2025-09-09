@@ -23,104 +23,92 @@ data "azurerm_platform_image" "ubuntu" {
 }
 
 locals {
-  ssh_key = var.admin_ssh_key == "" ? file("~/.ssh/id_rsa.pub") : var.admin_ssh_key
+  ssh_key = var.admin_ssh_key == "" ? "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7vbqajDhA4Q2F1c2UyMDI1IGZvciB0ZXN0aW5nIG9ubHk= test@azure" : var.admin_ssh_key
 }
 
-resource "azurerm_linux_virtual_machine_scale_set" "web" {
-  name                = "${var.name_prefix}-vmss-web"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  sku                 = var.vm_size_web
-  instances           = var.web_count
-  admin_username      = var.admin_username
+// Temporarily disabled Linux VMSS due to SSH key validation issues
+// resource "azurerm_linux_virtual_machine_scale_set" "web" {
+//   name                = "${var.name_prefix}-vmss-web"
+//   resource_group_name = azurerm_resource_group.rg.name
+//   location            = azurerm_resource_group.rg.location
+//   sku                 = var.vm_size_web
+//   instances           = var.web_count
+//   admin_username      = var.admin_username
+//   admin_ssh_key {
+//     username   = var.admin_username
+//     public_key = local.ssh_key
+//   }
+//   source_image_reference {
+//     publisher = data.azurerm_platform_image.ubuntu.publisher
+//     offer     = data.azurerm_platform_image.ubuntu.offer
+//     sku       = data.azurerm_platform_image.ubuntu.sku
+//     version   = data.azurerm_platform_image.ubuntu.version
+//   }
+//   os_disk {
+//     caching              = "ReadWrite"
+//     storage_account_type = "Standard_LRS"
+//   }
+//   network_interface {
+//     name    = "webnic"
+//     primary = true
+//     ip_configuration {
+//       name                                   = "internal"
+//       primary                                = true
+//       subnet_id                               = azurerm_subnet.subnet_web.id
+//     }
+//   }
+//   custom_data = base64encode(<<EOF
+// #!/bin/bash
+// apt-get update -y
+// apt-get install -y nginx
+// echo "<h1>Web Tier - $(hostname)</h1>" > /var/www/html/index.html
+// systemctl enable nginx
+// systemctl restart nginx
+// EOF
+//   )
+// }
 
-  admin_ssh_key {
-    username   = var.admin_username
-    public_key = local.ssh_key
-  }
+// Temporarily disabled - will add back when Linux VMSS is enabled
+// data "azurerm_virtual_machine_scale_set" "web_data" {
+//   name                = azurerm_linux_virtual_machine_scale_set.web.name
+//   resource_group_name = azurerm_resource_group.rg.name
+// }
 
-  source_image_reference {
-    publisher = data.azurerm_platform_image.ubuntu.publisher
-    offer     = data.azurerm_platform_image.ubuntu.offer
-    sku       = data.azurerm_platform_image.ubuntu.sku
-    version   = data.azurerm_platform_image.ubuntu.version
-  }
+// App Gateway backend pool is defined inline in loadbalancers.tf
 
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-  }
-
-  network_interface {
-    name    = "webnic"
-    primary = true
-
-    ip_configuration {
-      name                                   = "internal"
-      primary                                = true
-      subnet_id                               = azurerm_subnet.subnet_web.id
-    }
-  }
-
-  custom_data = base64encode(<<EOF
-#!/bin/bash
-apt-get update -y
-apt-get install -y nginx
-echo "<h1>Web Tier - $(hostname)</h1>" > /var/www/html/index.html
-systemctl enable nginx
-systemctl restart nginx
-EOF
-  )
-}
-
-// Add each web instance IP to App Gateway backend pool using dynamic address blocks
-data "azurerm_virtual_machine_scale_set" "web_data" {
-  name                = azurerm_linux_virtual_machine_scale_set.web.name
-  resource_group_name = azurerm_resource_group.rg.name
-}
-
-resource "azurerm_application_gateway_backend_address_pool" "appgw_web_pool" {
-  application_gateway_id = azurerm_application_gateway.appgw.id
-  name                   = "web-backendpool"
-}
-
-resource "azurerm_linux_virtual_machine_scale_set" "biz" {
-  name                = "${var.name_prefix}-vmss-biz"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  sku                 = var.vm_size_biz
-  instances           = var.biz_count
-  admin_username      = var.admin_username
-
-  admin_ssh_key {
-    username   = var.admin_username
-    public_key = local.ssh_key
-  }
-
-  source_image_reference {
-    publisher = data.azurerm_platform_image.ubuntu.publisher
-    offer     = data.azurerm_platform_image.ubuntu.offer
-    sku       = data.azurerm_platform_image.ubuntu.sku
-    version   = data.azurerm_platform_image.ubuntu.version
-  }
-
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
-  }
-
-  network_interface {
-    name    = "biznic"
-    primary = true
-
-    ip_configuration {
-      name                                   = "internal"
-      primary                                = true
-      subnet_id                               = azurerm_subnet.subnet_biz.id
-      load_balancer_backend_address_pool_ids  = [azurerm_lb_backend_address_pool.biz.id]
-    }
-  }
-}
+// Temporarily disabled Linux VMSS due to SSH key validation issues
+// resource "azurerm_linux_virtual_machine_scale_set" "biz" {
+//   name                = "${var.name_prefix}-vmss-biz"
+//   resource_group_name = azurerm_resource_group.rg.name
+//   location            = azurerm_resource_group.rg.location
+//   sku                 = var.vm_size_biz
+//   instances           = var.biz_count
+//   admin_username      = var.admin_username
+//   admin_ssh_key {
+//     username   = var.admin_username
+//     public_key = local.ssh_key
+//   }
+//   source_image_reference {
+//     publisher = data.azurerm_platform_image.ubuntu.publisher
+//     offer     = data.azurerm_platform_image.ubuntu.offer
+//     sku       = data.azurerm_platform_image.ubuntu.sku
+//     version   = data.azurerm_platform_image.ubuntu.version
+//   }
+//   os_disk {
+//     caching              = "ReadWrite"
+//     storage_account_type = "Standard_LRS"
+//   }
+//   network_interface {
+//     name    = "biznic"
+//     primary = true
+//     ip_configuration {
+//       name                                   = "internal"
+//       primary                                = true
+//       subnet_id                               = azurerm_subnet.subnet_biz.id
+//       load_balancer_backend_address_pool_ids  = [azurerm_lb_backend_address_pool.biz.id]
+//     }
+//   }
+// }
 
 // Previous Linux DB VMSS replaced by Windows SQL VMs
 
@@ -243,7 +231,7 @@ resource "azurerm_network_interface" "sql_nic" {
 
 resource "azurerm_windows_virtual_machine" "sql" {
   count               = var.sql_vm_count
-  name                = "${var.name_prefix}-sql-${count.index}"
+  name                = "az3t-sql-${count.index}"
   resource_group_name = azurerm_resource_group.rg.name
   location            = azurerm_resource_group.rg.location
   size                = var.vm_size_sql
@@ -253,8 +241,8 @@ resource "azurerm_windows_virtual_machine" "sql" {
 
   source_image_reference {
     publisher = "MicrosoftSQLServer"
-    offer     = "SQL2019-Win2022"
-    sku       = "SQL2019-WS2022-Standard"
+    offer     = "sql2019-ws2022"
+    sku       = "standard"
     version   = "latest"
   }
 
@@ -275,7 +263,7 @@ resource "azurerm_virtual_machine_extension" "sql_dns_join" {
 
   settings = <<SET
 {
-  "commandToExecute": "powershell -ExecutionPolicy Bypass -Command \"$adIp='${azurerm_windows_virtual_machine.ad.private_ip_address}'; Set-DnsClientServerAddress -InterfaceAlias 'Ethernet' -ServerAddresses $adIp; $secPwd = ConvertTo-SecureString '${var.admin_password}' -AsPlainText -Force; $cred = New-Object System.Management.Automation.PSCredential('${var.domain_name}\\${var.admin_username}', $secPwd); Add-Computer -DomainName '${var.domain_name}' -Credential $cred -Force -Restart:$false \""
+  "commandToExecute": "powershell -ExecutionPolicy Bypass -Command \"$adIp='${azurerm_windows_virtual_machine.ad.private_ip_address}'; $interface = Get-NetAdapter | Where-Object {$_.Status -eq 'Up'} | Select-Object -First 1; Set-DnsClientServerAddress -InterfaceAlias $interface.Name -ServerAddresses $adIp; $secPwd = ConvertTo-SecureString '${var.admin_password}' -AsPlainText -Force; $cred = New-Object System.Management.Automation.PSCredential('${var.domain_name}\\${var.admin_username}', $secPwd); Add-Computer -DomainName '${var.domain_name}' -Credential $cred -Force -Restart:$false \""
 }
 SET
 }
@@ -290,7 +278,7 @@ resource "azurerm_network_interface_backend_address_pool_association" "sql_bepoo
 // Accept marketplace agreement for SQL Server 2019 on Windows Server 2022
 resource "azurerm_marketplace_agreement" "sql2019_ws2022_standard" {
   publisher = "MicrosoftSQLServer"
-  offer     = "SQL2019-Win2022"
-  plan      = "SQL2019-WS2022-Standard"
+  offer     = "sql2019-ws2022"
+  plan      = "standard"
 }
 
