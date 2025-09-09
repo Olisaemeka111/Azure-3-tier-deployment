@@ -145,7 +145,7 @@ resource "azurerm_traffic_manager_profile" "tm" {
 resource "azurerm_traffic_manager_azure_endpoint" "tm_web" {
   name                = "weblb"
   profile_id          = azurerm_traffic_manager_profile.tm.id
-  target_resource_id  = azurerm_public_ip.web_lb_pip.id
+  target_resource_id  = azurerm_public_ip.appgw_pip.id
   weight              = 100
   priority            = 1
 }
