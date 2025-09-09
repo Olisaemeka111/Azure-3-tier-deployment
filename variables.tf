@@ -33,6 +33,28 @@ variable "subnet_mgmt_cidr" {
   type        = string
 }
 
+variable "subnet_appgw_cidr" {
+  description = "Application Gateway subnet CIDR"
+  type        = string
+}
+
+variable "subnet_bastion_cidr" {
+  description = "Azure Bastion subnet CIDR"
+  type        = string
+}
+
+variable "app_gateway_sku" {
+  description = "App Gateway WAF v2 SKU"
+  type        = string
+  default     = "WAF_v2"
+}
+
+variable "app_gateway_capacity" {
+  description = "App Gateway WAF autoscale min capacity"
+  type        = number
+  default     = 2
+}
+
 variable "admin_username" {
   description = "Admin username for VMs"
   type        = string

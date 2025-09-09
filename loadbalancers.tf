@@ -1,45 +1,81 @@
 // Public IP and Web Load Balancer
-resource "azurerm_public_ip" "web_lb_pip" {
-  name                = "${var.name_prefix}-web-lb-pip"
+// Replace Public LB with Application Gateway WAF v2
+resource "azurerm_public_ip" "appgw_pip" {
+  name                = "${var.name_prefix}-appgw-pip"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
-  domain_name_label   = "${var.name_prefix}-web-${random_string.suffix.result}"
 }
 
-resource "azurerm_lb" "web" {
-  name                = "${var.name_prefix}-web-lb"
+resource "azurerm_application_gateway" "appgw" {
+  name                = "${var.name_prefix}-appgw"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
-  sku                 = "Standard"
+
+  sku {
+    name = var.app_gateway_sku
+    tier = var.app_gateway_sku
+  }
+
+  autoscale_configuration {
+    min_capacity = var.app_gateway_capacity
+  }
+
+  gateway_ip_configuration {
+    name      = "appgatewayipcfg"
+    subnet_id = azurerm_subnet.subnet_appgw.id
+  }
+
+  frontend_port {
+    name = "port80"
+    port = 80
+  }
+
+  frontend_port {
+    name = "port443"
+    port = 443
+  }
 
   frontend_ip_configuration {
-    name                 = "PublicFrontend"
-    public_ip_address_id = azurerm_public_ip.web_lb_pip.id
+    name                 = "frontend"
+    public_ip_address_id = azurerm_public_ip.appgw_pip.id
   }
-}
 
-resource "azurerm_lb_backend_address_pool" "web" {
-  loadbalancer_id = azurerm_lb.web.id
-  name            = "web-bepool"
-}
+  http_listener {
+    name                           = "listener80"
+    frontend_ip_configuration_name = "frontend"
+    frontend_port_name             = "port80"
+    protocol                       = "Http"
+  }
 
-resource "azurerm_lb_probe" "web_http" {
-  loadbalancer_id = azurerm_lb.web.id
-  name            = "http"
-  port            = 80
-}
+  http_listener {
+    name                           = "listener443"
+    frontend_ip_configuration_name = "frontend"
+    frontend_port_name             = "port443"
+    protocol                       = "Https"
+    ssl_certificate_name           = null
+  }
 
-resource "azurerm_lb_rule" "web_http" {
-  loadbalancer_id                = azurerm_lb.web.id
-  name                           = "http"
-  protocol                       = "Tcp"
-  frontend_port                  = 80
-  backend_port                   = 80
-  frontend_ip_configuration_name = "PublicFrontend"
-  backend_address_pool_ids       = [azurerm_lb_backend_address_pool.web.id]
-  probe_id                       = azurerm_lb_probe.web_http.id
+  backend_address_pool {
+    name = "web-backendpool"
+  }
+
+  backend_http_settings {
+    name                  = "http"
+    cookie_based_affinity = "Disabled"
+    port                  = 80
+    protocol              = "Http"
+    request_timeout       = 30
+  }
+
+  request_routing_rule {
+    name                       = "rule80"
+    rule_type                  = "Basic"
+    http_listener_name         = "listener80"
+    backend_address_pool_name  = "web-backendpool"
+    backend_http_settings_name = "http"
+  }
 }
 
 // Internal LBs for Business and DB tiers

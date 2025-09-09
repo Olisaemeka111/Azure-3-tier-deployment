@@ -5,26 +5,26 @@ resource "azurerm_network_security_group" "nsg_web" {
   resource_group_name = azurerm_resource_group.rg.name
 
   security_rule {
-    name                       = "AllowHTTP"
+    name                       = "AllowHTTPFromAppGW"
     priority                   = 100
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "80"
-    source_address_prefix      = "*"
+    source_address_prefix      = azurerm_subnet.subnet_appgw.address_prefixes[0]
     destination_address_prefix = "*"
   }
 
   security_rule {
-    name                       = "AllowHTTPS"
+    name                       = "AllowHTTPSFromAppGW"
     priority                   = 110
     direction                  = "Inbound"
     access                     = "Allow"
     protocol                   = "Tcp"
     source_port_range          = "*"
     destination_port_range     = "443"
-    source_address_prefix      = "*"
+    source_address_prefix      = azurerm_subnet.subnet_appgw.address_prefixes[0]
     destination_address_prefix = "*"
   }
 }

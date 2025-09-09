@@ -59,7 +59,6 @@ resource "azurerm_linux_virtual_machine_scale_set" "web" {
       name                                   = "internal"
       primary                                = true
       subnet_id                               = azurerm_subnet.subnet_web.id
-      load_balancer_backend_address_pool_ids  = [azurerm_lb_backend_address_pool.web.id]
     }
   }
 
@@ -72,6 +71,17 @@ systemctl enable nginx
 systemctl restart nginx
 EOF
   )
+}
+
+// Add each web instance IP to App Gateway backend pool using dynamic address blocks
+data "azurerm_virtual_machine_scale_set" "web_data" {
+  name                = azurerm_linux_virtual_machine_scale_set.web.name
+  resource_group_name = azurerm_resource_group.rg.name
+}
+
+resource "azurerm_application_gateway_backend_address_pool" "appgw_web_pool" {
+  application_gateway_id = azurerm_application_gateway.appgw.id
+  name                   = "web-backendpool"
 }
 
 resource "azurerm_linux_virtual_machine_scale_set" "biz" {
@@ -141,50 +151,24 @@ resource "azurerm_traffic_manager_azure_endpoint" "tm_web" {
 }
 
 // Management subnet resources: Jumpbox and AD placeholder
-resource "azurerm_public_ip" "jump_pip" {
-  name                = "${var.name_prefix}-jump-pip"
+// Replace jumpbox with Azure Bastion (no public IP to VMs)
+resource "azurerm_public_ip" "bastion_pip" {
+  name                = "${var.name_prefix}-bastion-pip"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
   allocation_method   = "Static"
   sku                 = "Standard"
 }
 
-resource "azurerm_network_interface" "jump_nic" {
-  name                = "${var.name_prefix}-jump-nic"
+resource "azurerm_bastion_host" "bastion" {
+  name                = "${var.name_prefix}-bastion"
   location            = azurerm_resource_group.rg.location
   resource_group_name = azurerm_resource_group.rg.name
 
   ip_configuration {
-    name                          = "ipconfig1"
-    subnet_id                     = azurerm_subnet.subnet_mgmt.id
-    private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = azurerm_public_ip.jump_pip.id
-  }
-}
-
-resource "azurerm_linux_virtual_machine" "jump" {
-  name                = "${var.name_prefix}-jump"
-  resource_group_name = azurerm_resource_group.rg.name
-  location            = azurerm_resource_group.rg.location
-  size                = var.vm_size_jump
-  admin_username      = var.admin_username
-  network_interface_ids = [azurerm_network_interface.jump_nic.id]
-
-  admin_ssh_key {
-    username   = var.admin_username
-    public_key = local.ssh_key
-  }
-
-  source_image_reference {
-    publisher = data.azurerm_platform_image.ubuntu.publisher
-    offer     = data.azurerm_platform_image.ubuntu.offer
-    sku       = data.azurerm_platform_image.ubuntu.sku
-    version   = data.azurerm_platform_image.ubuntu.version
-  }
-
-  os_disk {
-    caching              = "ReadWrite"
-    storage_account_type = "Standard_LRS"
+    name                 = "configuration"
+    subnet_id            = azurerm_subnet.subnet_bastion.id
+    public_ip_address_id = azurerm_public_ip.bastion_pip.id
   }
 }
 
