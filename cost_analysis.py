@@ -344,6 +344,200 @@ class AzureCostAnalyzer:
         except Exception as e:
             print(f"Error creating cost chart: {e}")
     
+    def create_bar_chart(self, cost_data: Dict, output_file: str = "cost_bar_chart.png"):
+        """Create a bar chart for cost breakdown."""
+        try:
+            # Prepare data for bar chart
+            resource_types = []
+            costs = []
+            colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2']
+            
+            # Sort by cost descending
+            sorted_breakdown = sorted(
+                cost_data['breakdown'].items(),
+                key=lambda x: x[1]['total_cost'],
+                reverse=True
+            )
+            
+            for resource_type, data in sorted_breakdown:
+                if data['total_cost'] > 0:
+                    # Shorten resource type names for better display
+                    short_name = resource_type.split('/')[-1].replace('Microsoft.', '')
+                    resource_types.append(short_name)
+                    costs.append(data['total_cost'])
+            
+            # Create bar chart
+            plt.figure(figsize=(14, 8))
+            bars = plt.bar(resource_types, costs, color=colors[:len(resource_types)])
+            
+            # Add value labels on bars
+            for bar, cost in zip(bars, costs):
+                height = bar.get_height()
+                plt.text(bar.get_x() + bar.get_width()/2., height + max(costs)*0.01,
+                        f'${cost:.2f}', ha='center', va='bottom', fontweight='bold')
+            
+            plt.title('Azure 3-Tier Infrastructure - Monthly Cost by Resource Type', 
+                     fontsize=16, fontweight='bold', pad=20)
+            plt.xlabel('Resource Type', fontsize=12, fontweight='bold')
+            plt.ylabel('Monthly Cost (USD)', fontsize=12, fontweight='bold')
+            plt.xticks(rotation=45, ha='right')
+            plt.grid(axis='y', alpha=0.3)
+            
+            # Add total cost annotation
+            total_cost = cost_data['total_cost']
+            plt.text(0.02, 0.98, f'Total Monthly Cost: ${total_cost:.2f}', 
+                    transform=plt.gca().transAxes, fontsize=14, fontweight='bold',
+                    bbox=dict(boxstyle="round,pad=0.3", facecolor="lightblue", alpha=0.7),
+                    verticalalignment='top')
+            
+            plt.tight_layout()
+            plt.savefig(output_file, dpi=300, bbox_inches='tight')
+            plt.close()
+            
+            print(f"Cost bar chart saved as: {output_file}")
+            
+        except Exception as e:
+            print(f"Error creating bar chart: {e}")
+    
+    def create_detailed_spreadsheet(self, cost_data: Dict, output_file: str = "detailed_cost_analysis.xlsx"):
+        """Create a detailed Excel spreadsheet with multiple sheets."""
+        try:
+            with pd.ExcelWriter(output_file, engine='openpyxl') as writer:
+                # Sheet 1: Summary
+                summary_data = {
+                    'Metric': [
+                        'Total Monthly Cost',
+                        'Daily Average Cost',
+                        'Hourly Average Cost',
+                        'Total Resources',
+                        'Analysis Date',
+                        'Subscription ID',
+                        'Resource Group'
+                    ],
+                    'Value': [
+                        f"${cost_data['total_cost']:.2f}",
+                        f"${cost_data['total_cost'] / 30:.2f}",
+                        f"${cost_data['total_cost'] / (30 * 24):.2f}",
+                        sum(len(data['resources']) for data in cost_data['breakdown'].values()),
+                        datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+                        self.subscription_id,
+                        self.resource_group
+                    ]
+                }
+                summary_df = pd.DataFrame(summary_data)
+                summary_df.to_excel(writer, sheet_name='Summary', index=False)
+                
+                # Sheet 2: Cost by Resource Type
+                resource_type_data = []
+                for resource_type, data in cost_data['breakdown'].items():
+                    if data['total_cost'] > 0:
+                        percentage = (data['total_cost'] / cost_data['total_cost']) * 100
+                        resource_type_data.append({
+                            'Resource Type': resource_type.split('/')[-1].replace('Microsoft.', ''),
+                            'Full Resource Type': resource_type,
+                            'Monthly Cost': data['total_cost'],
+                            'Percentage': percentage,
+                            'Resource Count': len(data['resources'])
+                        })
+                
+                resource_type_df = pd.DataFrame(resource_type_data)
+                resource_type_df = resource_type_df.sort_values('Monthly Cost', ascending=False)
+                resource_type_df.to_excel(writer, sheet_name='By Resource Type', index=False)
+                
+                # Sheet 3: Individual Resources
+                individual_data = []
+                for resource_type, data in cost_data['breakdown'].items():
+                    for resource_name, cost in data['resources'].items():
+                        percentage = (cost / cost_data['total_cost']) * 100
+                        individual_data.append({
+                            'Resource Name': resource_name,
+                            'Resource Type': resource_type.split('/')[-1].replace('Microsoft.', ''),
+                            'Full Resource Type': resource_type,
+                            'Monthly Cost': cost,
+                            'Percentage': percentage,
+                            'Cost Category': self._get_cost_category(resource_type, cost)
+                        })
+                
+                individual_df = pd.DataFrame(individual_data)
+                individual_df = individual_df.sort_values('Monthly Cost', ascending=False)
+                individual_df.to_excel(writer, sheet_name='Individual Resources', index=False)
+                
+                # Sheet 4: Cost Optimization Recommendations
+                recommendations = self.get_cost_optimization_recommendations(cost_data)
+                rec_data = []
+                for i, rec in enumerate(recommendations, 1):
+                    priority = self._get_priority(rec)
+                    rec_data.append({
+                        'Priority': priority,
+                        'Recommendation': rec,
+                        'Estimated Savings': self._get_estimated_savings(rec),
+                        'Implementation Effort': self._get_effort_level(rec)
+                    })
+                
+                rec_df = pd.DataFrame(rec_data)
+                rec_df.to_excel(writer, sheet_name='Optimization Recommendations', index=False)
+                
+                # Sheet 5: Monthly Trends (placeholder for future data)
+                trend_data = {
+                    'Month': ['Current Month', 'Previous Month', '2 Months Ago', '3 Months Ago'],
+                    'Total Cost': [cost_data['total_cost'], 0, 0, 0],
+                    'Compute Cost': [sum(data['total_cost'] for rt, data in cost_data['breakdown'].items() 
+                                       if 'Compute' in rt), 0, 0, 0],
+                    'Network Cost': [sum(data['total_cost'] for rt, data in cost_data['breakdown'].items() 
+                                        if 'Network' in rt), 0, 0, 0],
+                    'Storage Cost': [sum(data['total_cost'] for rt, data in cost_data['breakdown'].items() 
+                                        if 'Storage' in rt), 0, 0, 0]
+                }
+                trend_df = pd.DataFrame(trend_data)
+                trend_df.to_excel(writer, sheet_name='Monthly Trends', index=False)
+            
+            print(f"Detailed Excel spreadsheet saved as: {output_file}")
+            
+        except Exception as e:
+            print(f"Error creating Excel spreadsheet: {e}")
+    
+    def _get_cost_category(self, resource_type: str, cost: float) -> str:
+        """Categorize resources by cost level."""
+        if cost > 100:
+            return "High Cost"
+        elif cost > 50:
+            return "Medium Cost"
+        elif cost > 10:
+            return "Low Cost"
+        else:
+            return "Minimal Cost"
+    
+    def _get_priority(self, recommendation: str) -> str:
+        """Determine priority level for recommendations."""
+        if "Application Gateway" in recommendation or "Bastion" in recommendation:
+            return "High"
+        elif "Reserved" in recommendation or "auto-shutdown" in recommendation:
+            return "Medium"
+        else:
+            return "Low"
+    
+    def _get_estimated_savings(self, recommendation: str) -> str:
+        """Extract estimated savings from recommendation text."""
+        if "~$100" in recommendation:
+            return "$100/month"
+        elif "~$50" in recommendation:
+            return "$50/month"
+        elif "~$45" in recommendation:
+            return "$45/month"
+        elif "~$20-30" in recommendation:
+            return "$20-30/month"
+        else:
+            return "Variable"
+    
+    def _get_effort_level(self, recommendation: str) -> str:
+        """Determine implementation effort level."""
+        if "Basic SKU" in recommendation or "auto-shutdown" in recommendation:
+            return "Low"
+        elif "Reserved" in recommendation or "Hybrid Benefit" in recommendation:
+            return "Medium"
+        else:
+            return "High"
+    
     def export_to_csv(self, cost_data: Dict, output_file: str = "cost_analysis.csv"):
         """Export cost data to CSV format."""
         try:
@@ -372,8 +566,11 @@ def main():
     parser.add_argument('--subscription-id', required=True, help='Azure subscription ID')
     parser.add_argument('--resource-group', default='azure-3tier-rg-ypggv', help='Resource group name')
     parser.add_argument('--output-dir', default='.', help='Output directory for reports and charts')
-    parser.add_argument('--chart', action='store_true', help='Generate cost breakdown chart')
+    parser.add_argument('--chart', action='store_true', help='Generate cost breakdown pie chart')
+    parser.add_argument('--bar-chart', action='store_true', help='Generate cost breakdown bar chart')
+    parser.add_argument('--excel', action='store_true', help='Generate detailed Excel spreadsheet')
     parser.add_argument('--csv', action='store_true', help='Export cost data to CSV')
+    parser.add_argument('--all', action='store_true', help='Generate all output formats')
     
     args = parser.parse_args()
     
@@ -397,11 +594,19 @@ def main():
         print("\n" + report)
         
         # Generate additional outputs if requested
-        if args.chart:
+        if args.all or args.chart:
             chart_file = os.path.join(args.output_dir, "cost_breakdown.png")
             analyzer.create_cost_chart(cost_data, chart_file)
         
-        if args.csv:
+        if args.all or args.bar_chart:
+            bar_chart_file = os.path.join(args.output_dir, "cost_bar_chart.png")
+            analyzer.create_bar_chart(cost_data, bar_chart_file)
+        
+        if args.all or args.excel:
+            excel_file = os.path.join(args.output_dir, "detailed_cost_analysis.xlsx")
+            analyzer.create_detailed_spreadsheet(cost_data, excel_file)
+        
+        if args.all or args.csv:
             csv_file = os.path.join(args.output_dir, "cost_analysis.csv")
             analyzer.export_to_csv(cost_data, csv_file)
         

@@ -51,8 +51,7 @@ run_python_analysis() {
         --subscription-id "$SUBSCRIPTION_ID" \
         --resource-group "$RESOURCE_GROUP" \
         --output-dir "$OUTPUT_DIR" \
-        --chart \
-        --csv
+        --all
 }
 
 # Function to run Infracost analysis
