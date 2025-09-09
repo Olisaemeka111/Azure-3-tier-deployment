@@ -2,41 +2,40 @@
 
 ```mermaid
 flowchart LR
-  TM[Traffic Manager] --> PIP[Public IP]
-  PIP --> WLB[Web Load Balancer]
-  subgraph Web[Web Tier - Subnet web]
-    WLB --> WBEP[Web BE Pool]
-    WBEP --> VMSSW[VMSS: Ubuntu + NGINX]
-  end
+  %% Core flow
+  TM[Traffic Manager] --> WLB[Web Load Balancer (Public)]
+  WLB --> VMSSW[Web VMSS (Ubuntu + NGINX)]
+  VMSSW --> BILB[Business Load Balancer (Internal)]
+  BILB --> VMSSB[Business VMSS (Ubuntu)]
+  VMSSB --> DILB[Database Load Balancer (Internal)]
+  DILB --> SQL1[SQL VM 1 (Win 2022 + SQL 2019)]
+  DILB --> SQL2[SQL VM 2 (Win 2022 + SQL 2019)]
 
-  subgraph Biz[Business Tier - Subnet business]
-    BILB[Internal LB - Biz] --> BIBEP[Biz BE Pool]
-    BIBEP --> VMSSB[VMSS: Ubuntu]
-  end
+  %% Management and AD
+  J[Jumpbox (Linux)] -. mgmt .- VMSSW
+  J -. mgmt .- VMSSB
+  J -. mgmt .- SQL1
+  J -. mgmt .- SQL2
+  AD[AD DS (Windows Server 2022)] -. DNS .- SQL1
+  AD -. DNS .- SQL2
+  AD -. mgmt .- J
 
-  subgraph DB[Database Tier - Subnet db]
-    DILB[Internal LB - DB] --> DBEP[DB BE Pool]
-    DBEP --> SQL1[Win 2022 + SQL 2019]
-    DBEP --> SQL2[Win 2022 + SQL 2019]
-  end
+  %% Subnet notes (labels only)
+  classDef note fill:#f8f8f8,stroke:#bbb,stroke-dasharray: 3 3;
+  WEB[(Subnet: web)]:::note
+  BIZ[(Subnet: business)]:::note
+  DB[(Subnet: db)]:::note
+  MGMT[(Subnet: management)]:::note
 
-  subgraph MGMT[Management Subnet]
-    J[Jumpbox (Linux)]
-    AD[Windows Server AD DS]
-  end
-
-  WLB --- BILB
-  BILB --- DILB
-
-  classDef nsg fill:#eef,stroke:#66f,stroke-width:1px;
-  classDef lb fill:#efe,stroke:#393,stroke-width:1px;
-  classDef vm fill:#fff,stroke:#444,stroke-width:1px;
-  class WLB,BILB,DILB lb;
-  class VMSSW,VMSSB,SQL1,SQL2,J,AD vm;
+  WEB --- WLB
+  BIZ --- BILB
+  DB  --- DILB
+  MGMT --- J
+  MGMT --- AD
 ```
 
 Notes:
 - NSGs: Web (80/443), Management (22/3389), Biz (intra-VNet), DB (1433 from Biz only).
 - SQL VMs join the AD domain and sit behind the DB internal load balancer.
-- Traffic flows: TM -> Public LB -> Web VMSS -> Biz LB -> Biz VMSS -> DB LB -> SQL.
+- Traffic flows: TM -> Web LB -> Web VMSS -> Biz LB -> Biz VMSS -> DB LB -> SQL VMs.
 
