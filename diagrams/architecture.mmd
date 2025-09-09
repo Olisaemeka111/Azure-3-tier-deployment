@@ -1,0 +1,33 @@
+flowchart LR
+  %% Core flow
+  TM[Traffic Manager] --> WLB[Web Load Balancer Public]
+  WLB --> VMSSW[Web VMSS Ubuntu NGINX]
+  VMSSW --> BILB[Business Load Balancer Internal]
+  BILB --> VMSSB[Business VMSS Ubuntu]
+  VMSSB --> DILB[Database Load Balancer Internal]
+  DILB --> SQL1[SQL VM1 Win2022 SQL2019]
+  DILB --> SQL2[SQL VM2 Win2022 SQL2019]
+
+  %% Management and AD
+  J[Jumpbox Linux] -.->|mgmt| VMSSW
+  J -.->|mgmt| VMSSB
+  J -.->|mgmt| SQL1
+  J -.->|mgmt| SQL2
+  AD[AD DS Windows 2022] -.->|DNS| SQL1
+  AD -.->|DNS| SQL2
+  AD -.->|mgmt| J
+
+  %% Subnet labels
+  WEB[(Subnet: web)]:::note
+  BIZ[(Subnet: business)]:::note
+  DB[(Subnet: db)]:::note
+  MGMT[(Subnet: management)]:::note
+
+  WEB --- WLB
+  BIZ --- BILB
+  DB  --- DILB
+  MGMT --- J
+  MGMT --- AD
+
+  classDef note fill:#f8f8f8,stroke:#bbb,stroke-dasharray: 3 3;
+
