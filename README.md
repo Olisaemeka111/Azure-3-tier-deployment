@@ -45,15 +45,7 @@ This repo includes a `terraform.tfvars` with sane defaults. Edit it as needed (e
 - The DB tier uses Linux VMs for demo purposes; replace with Azure SQL or Windows if needed.
 - For production, tighten NSG rules, add availability zones, diagnostics, and backups. Consider using Azure SQL Managed Instance or SQL Always On, and harden AD DS deployment (GPOs, multiple DCs, secure passwords and secrets management).
 
-## Push to GitHub
-Run the following inside this folder to push to a new repo (replace the URL):
-```bash
-git init
-git add .
-git commit -m "feat: Azure 3-tier with Web/Biz/SQL, AD DS, TM"
-git branch -M main
-git remote add origin https://github.com/<YOUR_USER>/<YOUR_REPO>.git
-git push -u origin main
+
 ```
 
 # Azure-3-tier-deployment
